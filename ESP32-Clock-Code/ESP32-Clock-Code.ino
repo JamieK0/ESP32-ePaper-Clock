@@ -512,9 +512,9 @@ void setup() {
   server.on("/setTimezone", HTTP_POST, [](AsyncWebServerRequest *request) {
     if (request->hasParam("timezone", true)) {
       String timezone = request->getParam("timezone", true)->value();
-      gmtOffset_sec = parseOffset(timezone);
-      configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
-      Serial.printf("Time zone set to offset %ld seconds\n", gmtOffset_sec);
+      newTimeZone(timezone);
+      //configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+      //Serial.printf("Time zone set to offset %ld seconds\n", gmtOffset_sec);
     }
     request->send(200, "text/html", "<html><body><h2>Timezone Updated</h2><a href=\"/\">Go Back</a></body></html>");
   });
@@ -548,9 +548,8 @@ void printLocalTime() {
   Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
 }
 
-// Function to parse timezone offsets (e.g., "GMT0" -> 0 seconds)
-long parseOffset(const String& timezone) {
-  // Implement parsing based on timezone format, e.g., "GMT0" -> 0
-  // Example: return offset in seconds
-  return 0; // Temporary value; customize as needed
+  void newTimeZone(const String& timezone) {
+  Serial.println(timezone);
+  setenv("TZ",timezone.c_str(),1);
+  tzset();
 }
