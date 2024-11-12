@@ -11,11 +11,14 @@ const int daylightOffset_sec = 3600;
 AsyncWebServer server(80);
 
 // Global variable for timezone offset
-long gmtOffset_sec = 39600; // Initial GMT offset, can be changed by user selection
+long gmtOffset_sec = 39600;  // Initial GMT offset, can be changed by user selection
+String alarmTime = "07:00"; // Default alarm time
+bool alarmDays[7] = {false, false, false, false, false, false, false}; // For each day of the week
+bool alarmTriggered = false;
 
 void setup() {
   Serial.begin(115200);
-  WiFi.mode(WIFI_STA);  
+  WiFi.mode(WIFI_STA);
   pinMode(TRIGGER_PIN, INPUT_PULLUP);
 
   WiFiManager wm;
@@ -31,12 +34,13 @@ void setup() {
 
   // Web server setup
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
-    String html = "<html><body><h2>Select Your Time Zone</h2>";
+    String html = "<html><body>";
+    html += "<h2>Select Your Time Zone</h2>";
     html += "<form action=\"/setTimezone\" method=\"POST\">";
     html += "<label for=\"timezone\">Timezone:</label>";
     html += "<select name=\"timezone\">";
 
-    // Insert timezone options from the parsed CSV data here
+    // Insert timezone options here, for example:
     html += R"html(
       <option value="GMT0">Africa/Abidjan</option>
 <option value="GMT0">Africa/Accra</option>
@@ -503,20 +507,53 @@ void setup() {
 
     html += "</select><br><br>";
     html += "<input type=\"submit\" value=\"Set Time Zone\">";
+    html += "</form>";
+
+    // Alarm configuration form
+    html += "<h2>Set Alarm</h2>";
+    html += "<form action=\"/setAlarm\" method=\"POST\">";
+    html += "<label for=\"alarmTime\">Alarm Time:</label>";
+    html += "<input type=\"time\" id=\"alarmTime\" name=\"alarmTime\" value=\"" + alarmTime + "\"><br><br>";
+
+    // Days of the week checkboxes
+    html += "<label>Days:</label><br>";
+    const char* daysOfWeek[] = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
+    for (int i = 0; i < 7; i++) {
+      html += "<input type=\"checkbox\" name=\"alarm" + String(daysOfWeek[i]) + "\"";
+      if (alarmDays[i]) html += " checked"; // Preserve checkbox state
+      html += "> " + String(daysOfWeek[i]) + "<br>";
+    }
+
+    html += "<br><input type=\"submit\" value=\"Set Alarm\">";
     html += "</form></body></html>";
 
     request->send(200, "text/html", html);
   });
 
-  // Handle timezone change
+// Handle timezone change
   server.on("/setTimezone", HTTP_POST, [](AsyncWebServerRequest *request) {
     if (request->hasParam("timezone", true)) {
       String timezone = request->getParam("timezone", true)->value();
       newTimeZone(timezone);
-      //configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
-      //Serial.printf("Time zone set to offset %ld seconds\n", gmtOffset_sec);
     }
     request->send(200, "text/html", "<html><body><h2>Timezone Updated</h2><a href=\"/\">Go Back</a></body></html>");
+  });
+
+  // Handle alarm settings update
+  server.on("/setAlarm", HTTP_POST, [](AsyncWebServerRequest *request) {
+    if (request->hasParam("alarmTime", true)) {
+      alarmTime = request->getParam("alarmTime", true)->value();
+      Serial.printf("Alarm Time set to: %s\n", alarmTime.c_str());
+    }
+    
+    const char* daysOfWeek[] = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
+    for (int i = 0; i < 7; i++) {
+      // Check if each day is selected
+      alarmDays[i] = request->hasParam("alarm" + String(daysOfWeek[i]), true);
+      Serial.printf("Alarm for %s: %s\n", daysOfWeek[i], alarmDays[i] ? "On" : "Off");
+    }
+
+    request->send(200, "text/html", "<html><body><h2>Alarm Settings Updated</h2><a href=\"/\">Go Back</a></body></html>");
   });
 
   server.begin();
@@ -525,8 +562,8 @@ void setup() {
 void loop() {
   // Always check if the trigger pin is pressed for Wi-Fi config portal
   if (digitalRead(TRIGGER_PIN) == LOW) {
-    WiFiManager wm;    
-    wm.setConfigPortalTimeout(120); // 120 seconds timeout for the portal
+    WiFiManager wm;
+    wm.setConfigPortalTimeout(120);  // 120 seconds timeout for the portal
 
     if (!wm.startConfigPortal("E-Paper Clock")) {
       Serial.println("Failed to connect, restarting...");
@@ -534,7 +571,7 @@ void loop() {
     }
     Serial.println("Connected to Wi-Fi");
   }
-
+  checkAlarm();
   delay(1000);
   printLocalTime();
 }
@@ -548,8 +585,34 @@ void printLocalTime() {
   Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
 }
 
-  void newTimeZone(const String& timezone) {
+void newTimeZone(const String& timezone) {
   Serial.println(timezone);
-  setenv("TZ",timezone.c_str(),1);
+  setenv("TZ", timezone.c_str(), 1);
   tzset();
+}
+
+void checkAlarm() {
+  struct tm timeinfo;
+  if (!getLocalTime(&timeinfo)) {
+    return;
+  }
+
+  // Check if the current day is selected for the alarm
+  int dayIndex = (timeinfo.tm_wday + 6) % 7; // Adjusting for Sunday as 0 in `tm_wday`
+  if (!alarmDays[dayIndex]) {
+    alarmTriggered = false; // Reset alarm if it's a new day
+    return;
+  }
+
+  // Format current time and check if it matches the alarm time
+  char currentTime[6];
+  strftime(currentTime, sizeof(currentTime), "%H:%M", &timeinfo);
+  if (alarmTime == currentTime && !alarmTriggered) {
+    Serial.println("Alarm! It's time to wake up!");
+    // Add actions here, e.g., turn on LED or buzzer
+    alarmTriggered = true; // Set to true to prevent retriggering within the same minute
+  }
+  else if (alarmTime != currentTime) {
+    alarmTriggered = false; // Reset when current time is different
+  }
 }
