@@ -16,6 +16,10 @@ String alarmTime = "07:00"; // Default alarm time
 bool alarmDays[7] = {false, false, false, false, false, false, false}; // For each day of the week
 bool alarmTriggered = false;
 
+String alarmTime2 = "07:00"; // 2nd alarm time
+bool alarmDays2[7] = {false, false, false, false, false, false, false}; // For each day of the week
+bool alarmTriggered2 = false;
+
 void setup() {
   Serial.begin(115200);
   WiFi.mode(WIFI_STA);
@@ -527,6 +531,25 @@ void setup() {
     html += "<br><input type=\"submit\" value=\"Set Alarm\">";
     html += "</form></body></html>";
 
+
+    // 2nd Alarm configuration form
+    html += "<h2>Set 2nd Alarm</h2>";
+    html += "<form action=\"/setAlarm2\" method=\"POST\">";
+    html += "<label for=\"alarmTime2\">Alarm Time:</label>";
+    html += "<input type=\"time\" id=\"alarmTime2\" name=\"alarmTime2\" value=\"" + alarmTime2 + "\"><br><br>";
+
+    // 2nd alarm days of the week checkboxes
+    html += "<label>Days:</label><br>";
+    const char* daysOfWeek2[] = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
+    for (int i = 0; i < 7; i++) {
+      html += "<input type=\"checkbox\" name=\"alarm2" + String(daysOfWeek2[i]) + "\"";
+      if (alarmDays2[i]) html += " checked"; // Preserve checkbox state
+      html += "> " + String(daysOfWeek2[i]) + "<br>";
+    }
+
+    html += "<br><input type=\"submit\" value=\"Set Alarm\">";
+    html += "</form></body></html>";
+
     request->send(200, "text/html", html);
   });
 
@@ -556,6 +579,23 @@ void setup() {
     request->send(200, "text/html", "<html><body><h2>Alarm Settings Updated</h2><a href=\"/\">Go Back</a></body></html>");
   });
 
+  // Handle 2nd alarm settings update
+  server.on("/setAlarm2", HTTP_POST, [](AsyncWebServerRequest *request) {
+    if (request->hasParam("alarmTime2", true)) {
+      alarmTime2 = request->getParam("alarmTime2", true)->value();
+      Serial.printf("Alarm Time set to: %s\n", alarmTime2.c_str());
+    }
+    
+    const char* daysOfWeek2[] = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
+    for (int i = 0; i < 7; i++) {
+      // Check if each day is selected
+      alarmDays2[i] = request->hasParam("alarm2" + String(daysOfWeek2[i]), true);
+      Serial.printf("Alarm for %s: %s\n", daysOfWeek2[i], alarmDays2[i] ? "On" : "Off");
+    }
+
+    request->send(200, "text/html", "<html><body><h2>Alarm Settings Updated</h2><a href=\"/\">Go Back</a></body></html>");
+  });
+
   server.begin();
 }
 
@@ -572,6 +612,7 @@ void loop() {
     Serial.println("Connected to Wi-Fi");
   }
   checkAlarm();
+  checkAlarm2();
   delay(1000);
   printLocalTime();
 }
@@ -614,5 +655,31 @@ void checkAlarm() {
   }
   else if (alarmTime != currentTime) {
     alarmTriggered = false; // Reset when current time is different
+  }
+}
+
+void checkAlarm2() {
+  struct tm timeinfo;
+  if (!getLocalTime(&timeinfo)) {
+    return;
+  }
+
+  // Check if the current day is selected for the alarm
+  int dayIndex2 = (timeinfo.tm_wday + 6) % 7; // Adjusting for Sunday as 0 in `tm_wday`
+  if (!alarmDays2[dayIndex2]) {
+    alarmTriggered2 = false; // Reset alarm if it's a new day
+    return;
+  }
+
+  // Format current time and check if it matches the alarm time
+  char currentTime[6];
+  strftime(currentTime, sizeof(currentTime), "%H:%M", &timeinfo);
+  if (alarmTime2 == currentTime && !alarmTriggered2) {
+    Serial.println("Alarm! It's time to wake up!");
+    // Add actions here, e.g., turn on LED or buzzer
+    alarmTriggered2 = true; // Set to true to prevent retriggering within the same minute
+  }
+  else if (alarmTime2 != currentTime) {
+    alarmTriggered2 = false; // Reset when current time is different
   }
 }
