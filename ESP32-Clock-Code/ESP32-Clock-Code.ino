@@ -24,6 +24,7 @@ void setup() {
   Serial.begin(115200);
   WiFi.mode(WIFI_STA);
   pinMode(TRIGGER_PIN, INPUT_PULLUP);
+  Serial.println("Turn on");
 
   WiFiManager wm;
   bool res = wm.autoConnect("E-Paper Clock");
