@@ -22,11 +22,11 @@ WebServer server(80);
 
 // Global variable for timezone offset
 long gmtOffset_sec = 39600;  // Initial GMT offset, can be changed by user selection
-String alarmTime = "07:00"; // Default alarm time
+String alrm = "07:00"; // Default alarm time
 bool alarmDays[7] = {false, false, false, false, false, false, false}; // For each day of the week
 bool alarmTriggered = false;
 
-String alarmTime2 = "07:00"; // 2nd alarm time
+String alrm2 = "07:00"; // 2nd alarm time
 bool alarmDays2[7] = {false, false, false, false, false, false, false}; // For each day of the week
 bool alarmTriggered2 = false;
 
@@ -45,6 +45,7 @@ void setup() {
   display.drawString(0, 0, "Connect to the E-Paper Clock Wifi");
   Serial.print("Connecting to ");
   display.drawString(0, 30, "and enter your home wifi credentials");
+  display.display();
 
   WiFi.mode(WIFI_STA);
   pinMode(TRIGGER_PIN, INPUT_PULLUP);
@@ -57,10 +58,12 @@ void setup() {
     Serial.println("Failed to connect");
     display.clear();
     display.drawString(0, 60, "Failed to connect");
+    display.display();
   } else {
     Serial.println("Connected to Wi-Fi");
     display.clear();
     display.drawString(0, 60, "Connected to Wifi");
+    display.display();
     configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
     printLocalTime();
   }
@@ -545,8 +548,8 @@ void setup() {
     // Alarm configuration form
     html += "<h2>Set Alarm</h2>";
     html += "<form action=\"/setAlarm\" method=\"POST\">";
-    html += "<label for=\"alarmTime\">Alarm Time:</label>";
-    html += "<input type=\"time\" id=\"alarmTime\" name=\"alarmTime\" value=\"" + alarmTime + "\"><br><br>";
+    html += "<label for=\"alrm\">Alarm Time:</label>";
+    html += "<input type=\"time\" id=\"alrm\" name=\"alrm\" value=\"" + alrm + "\"><br><br>";
 
     // Days of the week checkboxes
     html += "<label>Days:</label><br>";
@@ -564,8 +567,8 @@ void setup() {
     // 2nd Alarm configuration form
     html += "<h2>Set 2nd Alarm</h2>";
     html += "<form action=\"/setAlarm2\" method=\"POST\">";
-    html += "<label for=\"alarmTime2\">Alarm Time:</label>";
-    html += "<input type=\"time\" id=\"alarmTime2\" name=\"alarmTime2\" value=\"" + alarmTime2 + "\"><br><br>";
+    html += "<label for=\"alrm2\">Alarm Time:</label>";
+    html += "<input type=\"time\" id=\"alrm2\" name=\"alrm2\" value=\"" + alrm2 + "\"><br><br>";
 
     // 2nd alarm days of the week checkboxes
     html += "<label>Days:</label><br>";
@@ -593,9 +596,9 @@ server.on("/setTimezone", HTTP_POST, []() {
 
 // Handle alarm settings update
 server.on("/setAlarm", HTTP_POST, []() {
-    if (server.hasArg("alarmTime")) {
-        alarmTime = server.arg("alarmTime");
-        Serial.printf("Alarm Time set to: %s\n", alarmTime.c_str());
+    if (server.hasArg("alrm")) {
+        alrm = server.arg("alrm");
+        Serial.printf("Alarm Time set to: %s\n", alrm.c_str());
     }
 
     const char* daysOfWeek[] = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
@@ -610,9 +613,9 @@ server.on("/setAlarm", HTTP_POST, []() {
 
 // Handle 2nd alarm settings update
 server.on("/setAlarm2", HTTP_POST, []() {
-    if (server.hasArg("alarmTime2")) {
-        alarmTime2 = server.arg("alarmTime2");
-        Serial.printf("Alarm Time set to: %s\n", alarmTime2.c_str());
+    if (server.hasArg("alrm2")) {
+        alrm2 = server.arg("alrm2");
+        Serial.printf("Alarm Time set to: %s\n", alrm2.c_str());
     }
 
     const char* daysOfWeek2[] = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
@@ -649,12 +652,21 @@ void loop() {
 
 void printLocalTime() {
   struct tm timeinfo;
+  
   if (!getLocalTime(&timeinfo)) {
     Serial.println("Failed to obtain time");
     return;
   }
   Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
-  display.drawString(0, 0, "time");
+  char timeBuffer[50];
+  String lastDisplayedTime = "";  // Stores the last displayed time    
+    strftime(timeBuffer, sizeof(timeBuffer), "%H:%M", &timeinfo);
+    if (timeBuffer != lastDisplayedTime) {
+    display.clear();
+    display.drawString(0, 0, String(timeBuffer));
+    display.display(); // Ensure to refresh the e-paper display
+    lastDisplayedTime = timeBuffer;  // Update the stored time
+ }
 }
 
 void newTimeZone(const String& timezone) {
@@ -679,12 +691,12 @@ void checkAlarm() {
   // Format current time and check if it matches the alarm time
   char currentTime[6];
   strftime(currentTime, sizeof(currentTime), "%H:%M", &timeinfo);
-  if (alarmTime == currentTime && !alarmTriggered) {
+  if (alrm == currentTime && !alarmTriggered) {
     Serial.println("Alarm! It's time to wake up!");
     // Add actions here, e.g., turn on LED or buzzer
     alarmTriggered = true; // Set to true to prevent retriggering within the same minute
   }
-  else if (alarmTime != currentTime) {
+  else if (alrm != currentTime) {
     alarmTriggered = false; // Reset when current time is different
   }
 }
@@ -705,12 +717,12 @@ void checkAlarm2() {
   // Format current time and check if it matches the alarm time
   char currentTime[6];
   strftime(currentTime, sizeof(currentTime), "%H:%M", &timeinfo);
-  if (alarmTime2 == currentTime && !alarmTriggered2) {
+  if (alrm2 == currentTime && !alarmTriggered2) {
     Serial.println("Alarm! It's time to wake up!");
     // Add actions here, e.g., turn on LED or buzzer
     alarmTriggered2 = true; // Set to true to prevent retriggering within the same minute
   }
-  else if (alarmTime2 != currentTime) {
+  else if (alrm2 != currentTime) {
     alarmTriggered2 = false; // Reset when current time is different
   }
 }
