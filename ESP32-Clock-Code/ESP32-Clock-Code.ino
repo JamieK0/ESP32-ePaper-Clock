@@ -1,5 +1,5 @@
 #include <WiFiManager.h>
-#include <ESPAsyncWebServer.h>
+#include <WebServer.h>
 #include <WiFi.h>
 #include <time.h>
 
@@ -8,7 +8,7 @@ const char* ntpServer = "pool.ntp.org";
 const int daylightOffset_sec = 3600;
 
 // Create an instance of the AsyncWebServer
-AsyncWebServer server(80);
+WebServer server(80);
 
 // Global variable for timezone offset
 long gmtOffset_sec = 39600;  // Initial GMT offset, can be changed by user selection
@@ -38,7 +38,7 @@ void setup() {
   }
 
   // Web server setup
-  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
+  server.on("/", HTTP_GET, []() {
     String html = "<html><body>";
     html += "<h2>Select Your Time Zone</h2>";
     html += "<form action=\"/setTimezone\" method=\"POST\">";
@@ -551,51 +551,51 @@ void setup() {
     html += "<br><input type=\"submit\" value=\"Set Alarm\">";
     html += "</form></body></html>";
 
-    request->send(200, "text/html", html);
+    server.send(200, "text/html", html);
   });
 
 // Handle timezone change
-  server.on("/setTimezone", HTTP_POST, [](AsyncWebServerRequest *request) {
-    if (request->hasParam("timezone", true)) {
-      String timezone = request->getParam("timezone", true)->value();
-      newTimeZone(timezone);
+server.on("/setTimezone", HTTP_POST, []() {
+    if (server.hasArg("timezone")) {
+        String timezone = server.arg("timezone");
+        newTimeZone(timezone);
     }
-    request->send(200, "text/html", "<html><body><h2>Timezone Updated</h2><a href=\"/\">Go Back</a></body></html>");
-  });
+    server.send(200, "text/html", "<html><body><h2>Timezone Updated</h2><a href=\"/\">Go Back</a></body></html>");
+});
 
-  // Handle alarm settings update
-  server.on("/setAlarm", HTTP_POST, [](AsyncWebServerRequest *request) {
-    if (request->hasParam("alarmTime", true)) {
-      alarmTime = request->getParam("alarmTime", true)->value();
-      Serial.printf("Alarm Time set to: %s\n", alarmTime.c_str());
+// Handle alarm settings update
+server.on("/setAlarm", HTTP_POST, []() {
+    if (server.hasArg("alarmTime")) {
+        alarmTime = server.arg("alarmTime");
+        Serial.printf("Alarm Time set to: %s\n", alarmTime.c_str());
     }
-    
+
     const char* daysOfWeek[] = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
     for (int i = 0; i < 7; i++) {
-      // Check if each day is selected
-      alarmDays[i] = request->hasParam("alarm" + String(daysOfWeek[i]), true);
-      Serial.printf("Alarm for %s: %s\n", daysOfWeek[i], alarmDays[i] ? "On" : "Off");
+        // Check if each day is selected
+        alarmDays[i] = server.hasArg("alarm" + String(daysOfWeek[i]));
+        Serial.printf("Alarm for %s: %s\n", daysOfWeek[i], alarmDays[i] ? "On" : "Off");
     }
 
-    request->send(200, "text/html", "<html><body><h2>Alarm Settings Updated</h2><a href=\"/\">Go Back</a></body></html>");
-  });
+    server.send(200, "text/html", "<html><body><h2>Alarm Settings Updated</h2><a href=\"/\">Go Back</a></body></html>");
+});
 
-  // Handle 2nd alarm settings update
-  server.on("/setAlarm2", HTTP_POST, [](AsyncWebServerRequest *request) {
-    if (request->hasParam("alarmTime2", true)) {
-      alarmTime2 = request->getParam("alarmTime2", true)->value();
-      Serial.printf("Alarm Time set to: %s\n", alarmTime2.c_str());
+// Handle 2nd alarm settings update
+server.on("/setAlarm2", HTTP_POST, []() {
+    if (server.hasArg("alarmTime2")) {
+        alarmTime2 = server.arg("alarmTime2");
+        Serial.printf("Alarm Time set to: %s\n", alarmTime2.c_str());
     }
-    
+
     const char* daysOfWeek2[] = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
     for (int i = 0; i < 7; i++) {
-      // Check if each day is selected
-      alarmDays2[i] = request->hasParam("alarm2" + String(daysOfWeek2[i]), true);
-      Serial.printf("Alarm for %s: %s\n", daysOfWeek2[i], alarmDays2[i] ? "On" : "Off");
+        // Check if each day is selected
+        alarmDays2[i] = server.hasArg("alarm2" + String(daysOfWeek2[i]));
+        Serial.printf("Alarm for %s: %s\n", daysOfWeek2[i], alarmDays2[i] ? "On" : "Off");
     }
 
-    request->send(200, "text/html", "<html><body><h2>Alarm Settings Updated</h2><a href=\"/\">Go Back</a></body></html>");
-  });
+    server.send(200, "text/html", "<html><body><h2>Alarm Settings Updated</h2><a href=\"/\">Go Back</a></body></html>");
+});
 
   server.begin();
 }
@@ -612,6 +612,7 @@ void loop() {
     }
     Serial.println("Connected to Wi-Fi");
   }
+  server.handleClient();
   checkAlarm();
   checkAlarm2();
   delay(1000);
