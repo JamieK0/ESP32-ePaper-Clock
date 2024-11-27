@@ -3,6 +3,16 @@
 #include <WiFi.h>
 #include <time.h>
 
+//Heltec E290
+#include "HT_DEPG0290BxS800FxX_BW.h"
+DEPG0290BxS800FxX_BW display(5, 4, 3, 6, 2, 1, -1, 6000000);  //rst,dc,cs,busy,sck,mosi,miso,frequency
+typedef void (*Demo)(void);
+#define DIRECTION ANGLE_0_DEGREE
+#define Resolution 0.000244140625 
+int demoMode = 0;
+int width, height;
+
+//Clock Config
 #define TRIGGER_PIN 0
 const char* ntpServer = "pool.ntp.org";
 const int daylightOffset_sec = 3600;
@@ -22,6 +32,20 @@ bool alarmTriggered2 = false;
 
 void setup() {
   Serial.begin(115200);
+
+  // Display setup
+  if (DIRECTION == ANGLE_0_DEGREE || DIRECTION == ANGLE_180_DEGREE) {
+  }
+  VextON();
+  delay(100);
+  display.init();
+  display.screenRotate(DIRECTION);
+  display.clear();
+  display.setFont(ArialMT_Plain_24);
+  display.drawString(0, 0, "Connect to the E-Paper Clock Wifi");
+  Serial.print("Connecting to ");
+  display.drawString(0, 30, "and enter your home wifi credentials");
+
   WiFi.mode(WIFI_STA);
   pinMode(TRIGGER_PIN, INPUT_PULLUP);
   Serial.println("Turn on");
@@ -31,8 +55,12 @@ void setup() {
 
   if (!res) {
     Serial.println("Failed to connect");
+    display.clear();
+    display.drawString(0, 60, "Failed to connect");
   } else {
     Serial.println("Connected to Wi-Fi");
+    display.clear();
+    display.drawString(0, 60, "Connected to Wifi");
     configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
     printLocalTime();
   }
@@ -626,6 +654,7 @@ void printLocalTime() {
     return;
   }
   Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
+  display.drawString(0, 0, "time");
 }
 
 void newTimeZone(const String& timezone) {
@@ -684,4 +713,9 @@ void checkAlarm2() {
   else if (alarmTime2 != currentTime) {
     alarmTriggered2 = false; // Reset when current time is different
   }
+}
+
+void VextON(void) {
+  pinMode(18, OUTPUT);
+  digitalWrite(18, HIGH);
 }
