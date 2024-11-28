@@ -52,9 +52,10 @@ void setup() {
   display.drawString(0, 20, "  choosing it in your device's wifi");
   display.drawString(0, 30, "  settings.");
   display.drawString(0, 50, "2. Wait for the pop-up to appear");
-  display.drawString(0, 60, "   on your device.");
-  display.drawString(0, 80, "3. Choose configure wifi and");
-  display.drawString(0, 90, "   enter wifi details.");
+  display.drawString(0, 60, "   on your device. This may take");
+  display.drawString(0, 70, "   a few seconds.");
+  display.drawString(0, 100, "3. Choose 'Configure WiFi' and");
+  display.drawString(0, 110, "   enter wifi details.");
   display.drawXbm(168, 0, 128, 128, Wifi_QR_bits);
   display.display();
 
