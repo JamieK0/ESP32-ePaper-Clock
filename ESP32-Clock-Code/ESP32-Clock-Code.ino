@@ -68,7 +68,7 @@ void setup() {
 
   // reset settings - wipe stored credentials for testing
     // these are stored by the esp library
-    wm.resetSettings(); //COMMENT OUT FOR FINAL RELEASE
+    //wm.resetSettings(); //COMMENT OUT FOR FINAL RELEASE
 
 
   if (!res) {
