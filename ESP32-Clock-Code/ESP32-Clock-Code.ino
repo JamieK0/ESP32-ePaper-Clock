@@ -5,11 +5,18 @@
 #include "images.h"
 
 //Heltec E290
-#include "HT_DEPG0290BxS800FxX_BW.h"
-DEPG0290BxS800FxX_BW display(5, 4, 3, 6, 2, 1, -1, 6000000);  //rst,dc,cs,busy,sck,mosi,miso,frequency
+#include <heltec-eink-modules.h>
+#include "Fonts/FreeSans9pt7b.h"
+// Wiring (SPI Displays only)
+        //#define PIN_DC   2
+        //#define PIN_CS   4
+        //#define PIN_BUSY 5
+//DEPG0290BNS800 display( PIN_DC, PIN_CS, PIN_BUSY );      // 2.9"  - Mono 
+EInkDisplay_VisionMasterE290 display;
+
+//DEPG0290BxS800FxX_BW display(5, 4, 3, 6, 2, 1, -1, 6000000);  //rst,dc,cs,busy,sck,mosi,miso,frequency
 typedef void (*Demo)(void);
-#define DIRECTION ANGLE_0_DEGREE
-#define Resolution 0.000244140625
+
 int demoMode = 0;
 int width, height;
 
@@ -38,26 +45,34 @@ void setup() {
   Serial.begin(115200);
 
   // Display setup
-  if (DIRECTION == ANGLE_0_DEGREE || DIRECTION == ANGLE_180_DEGREE) {
-  }
+  //if (DIRECTION == ANGLE_0_DEGREE || DIRECTION == ANGLE_180_DEGREE) {}
   VextON();
   delay(100);
-  display.init();
-  display.screenRotate(DIRECTION);
   display.clear();
-  display.setFont(ArialMT_Plain_10);
-  display.drawString(0, 0, "1. Connect to the E-Paper Clock ");
+  display.landscape();
+  display.setFont( &FreeSans9pt7b );
+  //display.setFont(ArialMT_Plain_10);
+  display.setCursor(0, 0);
+  display.println("1. Connect to the E-Paper Clock ");
+  display.setCursor(0, 10);
+  display.println("  Wifi using the QR Code or");
+  display.setCursor(0, 20);
+  display.println("  choosing it in your device's wifi");
+  display.drawXBitmap(168, 0, Wifi_QR_bits, 128, 128, BLACK);
+  display.update();
+
+  //display.drawString(0, 0, "1. Connect to the E-Paper Clock ");
   Serial.print("Connecting to ");
-  display.drawString(0, 10, "  Wifi using the QR Code or");
-  display.drawString(0, 20, "  choosing it in your device's wifi");
-  display.drawString(0, 30, "  settings.");
-  display.drawString(0, 50, "2. Wait for the pop-up to appear");
-  display.drawString(0, 60, "   on your device. This may take");
-  display.drawString(0, 70, "   a few seconds.");
-  display.drawString(0, 100, "3. Choose 'Configure WiFi' and");
-  display.drawString(0, 110, "   enter wifi details.");
-  display.drawXbm(168, 0, 128, 128, Wifi_QR_bits);
-  display.display();
+  //display.drawString(0, 10, "  Wifi using the QR Code or");
+  //display.drawString(0, 20, "  choosing it in your device's wifi");
+  //display.drawString(0, 30, "  settings.");
+  //display.drawString(0, 50, "2. Wait for the pop-up to appear");
+  //display.drawString(0, 60, "   on your device. This may take");
+  //display.drawString(0, 70, "   a few seconds.");
+  //display.drawString(0, 100, "3. Choose 'Configure WiFi' and");
+  //display.drawString(0, 110, "   enter wifi details.");
+  //display.drawXbm(168, 0, 128, 128, Wifi_QR_bits);
+  //display.display();
 
   WiFi.mode(WIFI_STA);
   pinMode(TRIGGER_PIN, INPUT_PULLUP);
@@ -73,17 +88,19 @@ void setup() {
 
   if (!res) {
     Serial.println("Failed to connect");
-    display.clear();
-    display.drawString(0, 60, "Failed to connect");
-    display.display();
+    //display.clear();
+    //display.drawString(0, 60, "Failed to connect");
+    //display.display();
   } else {
     Serial.println("Connected to Wi-Fi");
-    display.clear();
-    display.drawString(0, 60, "Connected to Wifi");
-    display.display();
+    //display.clear();
+    //display.drawString(0, 60, "Connected to Wifi");
+    //display.display();
     configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
     String lastDisplayedTime = ""; //clears String so that printLocalTime displays current time
     display.clear();
+    delay(100);
+    display.fastmodeOn();
     printLocalTime();
     
   }
@@ -682,8 +699,10 @@ void printLocalTime() {
   strftime(timeBuffer, sizeof(timeBuffer), "%H:%M", &timeinfo);
   if (timeBuffer != lastDisplayedTime) {
     display.clear();
-    display.drawString(0, 0, String(timeBuffer));
-    display.display();               // Ensure to refresh the e-paper display
+    display.setCursor(20, 20);
+    display.println(String(timeBuffer));
+    delay(500);
+    display.update();               // Ensure to refresh the e-paper display
     lastDisplayedTime = timeBuffer;  // Update the stored time
   }
 }
