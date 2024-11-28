@@ -7,10 +7,11 @@
 //Heltec E290
 #include <heltec-eink-modules.h>
 #include "Fonts/FreeSans9pt7b.h"
+#include "Fonts/FreeSans24pt7b.h"
 // Wiring (SPI Displays only)
-        //#define PIN_DC   2
-        //#define PIN_CS   4
-        //#define PIN_BUSY 5
+         #define PIN_DC   2
+         #define PIN_CS   4
+         #define PIN_BUSY 5
 //DEPG0290BNS800 display( PIN_DC, PIN_CS, PIN_BUSY );      // 2.9"  - Mono 
 EInkDisplay_VisionMasterE290 display;
 
@@ -100,6 +101,7 @@ void setup() {
     String lastDisplayedTime = ""; //clears String so that printLocalTime displays current time
     display.clear();
     delay(100);
+    display.setFont( &FreeSans24pt7b );
     display.fastmodeOn();
     printLocalTime();
     
@@ -698,12 +700,20 @@ void printLocalTime() {
   char timeBuffer[50];
   strftime(timeBuffer, sizeof(timeBuffer), "%H:%M", &timeinfo);
   if (timeBuffer != lastDisplayedTime) {
+    display.setWindow( display.left(), display.top(), display.width(), display.height() - 35 ); // Don't overwrite the bottom 35px
+    DRAW (display) {
     display.clear();
-    display.setCursor(20, 20);
-    display.println(String(timeBuffer));
-    delay(500);
-    display.update();               // Ensure to refresh the e-paper display
+    display.setCursor(50, 50);
+    display.print(String(timeBuffer));
+    }
+    DRAW (display){
+      display.setCursor(50, 50);
+      display.print(String(timeBuffer));
+    }
+    
+    //display.update();               // Ensure to refresh the e-paper display
     lastDisplayedTime = timeBuffer;  // Update the stored time
+    
   }
 }
 
