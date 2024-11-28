@@ -3,16 +3,20 @@
 #include <WiFi.h>
 #include <time.h>
 #include "images.h"
+#include <GxEPD2_BW.h>              // including both doesn't use more code or ram
+
+// select the display class and display driver class in the following file (new style):
+#include "GxEPD2_display_selection.h"
+#include <U8g2_for_Adafruit_GFX.h>  // https://github.com/olikraus/U8g2_for_Adafruit_GFX
 
 //Heltec E290
-#include <heltec-eink-modules.h>
 #include "Fonts/FreeSans9pt7b.h"
 // Wiring (SPI Displays only)
         //#define PIN_DC   2
         //#define PIN_CS   4
         //#define PIN_BUSY 5
 //DEPG0290BNS800 display( PIN_DC, PIN_CS, PIN_BUSY );      // 2.9"  - Mono 
-EInkDisplay_VisionMasterE290 display;
+U8G2_FOR_ADAFRUIT_GFX u8g2Fonts;  // font constructor
 
 //DEPG0290BxS800FxX_BW display(5, 4, 3, 6, 2, 1, -1, 6000000);  //rst,dc,cs,busy,sck,mosi,miso,frequency
 typedef void (*Demo)(void);
@@ -48,19 +52,24 @@ void setup() {
   //if (DIRECTION == ANGLE_0_DEGREE || DIRECTION == ANGLE_180_DEGREE) {}
   VextON();
   delay(100);
-  display.clear();
-  display.landscape();
-  display.setFont( &FreeSans9pt7b );
-  //display.setFont(ArialMT_Plain_10);
-  display.setCursor(0, 0);
-  display.println("1. Connect to the E-Paper Clock ");
-  display.setCursor(0, 10);
-  display.println("  Wifi using the QR Code or");
-  display.setCursor(0, 20);
-  display.println("  choosing it in your device's wifi");
-  display.drawXBitmap(168, 0, Wifi_QR_bits, 128, 128, BLACK);
-  display.update();
+  u8g2Fonts.begin(display);  // connect the u8g2 display
+  display.setRotation(3);  //0 is 'portrait'
 
+  u8g2Fonts.setForegroundColor(GxEPD_BLACK);
+  u8g2Fonts.setBackgroundColor(GxEPD_WHITE);
+  u8g2Fonts.setFont(u8g2_font_logisoso20_tr);
+uint16_t x = 73;
+  uint16_t y = 110;  //bottom
+  // covers bottom half
+  display.setFullWindow();
+  display.firstPage();
+  do  // update the whole screen
+  {
+    u8g2Fonts.setCursor(x, y);
+    u8g2Fonts.print("TEST");
+  } while (display.nextPage());
+  display.hibernate();
+  Serial.println("DISPLAY DATE = finished");
   //display.drawString(0, 0, "1. Connect to the E-Paper Clock ");
   Serial.print("Connecting to ");
   //display.drawString(0, 10, "  Wifi using the QR Code or");
@@ -98,9 +107,9 @@ void setup() {
     //display.display();
     configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
     String lastDisplayedTime = ""; //clears String so that printLocalTime displays current time
-    display.clear();
+    //display.clear();
     delay(100);
-    display.fastmodeOn();
+    //display.fastmodeOn();
     printLocalTime();
     
   }
@@ -698,11 +707,11 @@ void printLocalTime() {
   char timeBuffer[50];
   strftime(timeBuffer, sizeof(timeBuffer), "%H:%M", &timeinfo);
   if (timeBuffer != lastDisplayedTime) {
-    display.clear();
-    display.setCursor(20, 20);
-    display.println(String(timeBuffer));
+    //display.clear();
+    //display.setCursor(20, 20);
+    //display.println(String(timeBuffer));
     delay(500);
-    display.update();               // Ensure to refresh the e-paper display
+    //display.update();               // Ensure to refresh the e-paper display
     lastDisplayedTime = timeBuffer;  // Update the stored time
   }
 }
