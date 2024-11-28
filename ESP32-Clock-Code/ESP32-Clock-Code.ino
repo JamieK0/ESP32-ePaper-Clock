@@ -2,13 +2,14 @@
 #include <WebServer.h>
 #include <WiFi.h>
 #include <time.h>
+#include "images.h"
 
 //Heltec E290
 #include "HT_DEPG0290BxS800FxX_BW.h"
 DEPG0290BxS800FxX_BW display(5, 4, 3, 6, 2, 1, -1, 6000000);  //rst,dc,cs,busy,sck,mosi,miso,frequency
 typedef void (*Demo)(void);
 #define DIRECTION ANGLE_0_DEGREE
-#define Resolution 0.000244140625 
+#define Resolution 0.000244140625
 int demoMode = 0;
 int width, height;
 
@@ -17,17 +18,20 @@ int width, height;
 const char* ntpServer = "pool.ntp.org";
 const int daylightOffset_sec = 3600;
 
-// Create an instance of the AsyncWebServer
+// Variable for screen update based on current time
+String lastDisplayedTime = "";  // Stores the last displayed time
+
+// Create an instance of the Webserver
 WebServer server(80);
 
 // Global variable for timezone offset
-long gmtOffset_sec = 39600;  // Initial GMT offset, can be changed by user selection
-String alrm = "07:00"; // Default alarm time
-bool alarmDays[7] = {false, false, false, false, false, false, false}; // For each day of the week
+long gmtOffset_sec = 39600;                                               // Initial GMT offset, can be changed by user selection
+String alrm = "07:00";                                                    // Default alarm time
+bool alarmDays[7] = { false, false, false, false, false, false, false };  // For each day of the week
 bool alarmTriggered = false;
 
-String alrm2 = "07:00"; // 2nd alarm time
-bool alarmDays2[7] = {false, false, false, false, false, false, false}; // For each day of the week
+String alrm2 = "07:00";                                                    // 2nd alarm time
+bool alarmDays2[7] = { false, false, false, false, false, false, false };  // For each day of the week
 bool alarmTriggered2 = false;
 
 void setup() {
@@ -41,10 +45,17 @@ void setup() {
   display.init();
   display.screenRotate(DIRECTION);
   display.clear();
-  display.setFont(ArialMT_Plain_24);
-  display.drawString(0, 0, "Connect to the E-Paper Clock Wifi");
+  display.setFont(ArialMT_Plain_10);
+  display.drawString(0, 0, "1. Connect to the E-Paper Clock ");
   Serial.print("Connecting to ");
-  display.drawString(0, 30, "and enter your home wifi credentials");
+  display.drawString(0, 10, "  Wifi using the QR Code or");
+  display.drawString(0, 20, "  choosing it in your device's wifi");
+  display.drawString(0, 30, "  settings.");
+  display.drawString(0, 40, "2. Wait for the pop-up to appear");
+  display.drawString(0, 50, "   on your device.");
+  display.drawString(0, 60, "3. Choose configure wifi and");
+  display.drawString(0, 60, "   enter wifi details.");
+  display.drawXbm(168, 0, 128, 128, Wifi_QR_bits);
   display.display();
 
   WiFi.mode(WIFI_STA);
@@ -52,7 +63,12 @@ void setup() {
   Serial.println("Turn on");
 
   WiFiManager wm;
-  bool res = wm.autoConnect("E-Paper Clock");
+  bool res = wm.autoConnect("E-paper Clock");
+
+  // reset settings - wipe stored credentials for testing
+    // these are stored by the esp library
+    wm.resetSettings(); //COMMENT OUT FOR FINAL RELEASE
+
 
   if (!res) {
     Serial.println("Failed to connect");
@@ -65,7 +81,10 @@ void setup() {
     display.drawString(0, 60, "Connected to Wifi");
     display.display();
     configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+    String lastDisplayedTime = ""; //clears String so that printLocalTime displays current time
+    display.clear();
     printLocalTime();
+    
   }
 
   // Web server setup
@@ -553,10 +572,10 @@ void setup() {
 
     // Days of the week checkboxes
     html += "<label>Days:</label><br>";
-    const char* daysOfWeek[] = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
+    const char* daysOfWeek[] = { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" };
     for (int i = 0; i < 7; i++) {
       html += "<input type=\"checkbox\" name=\"alarm" + String(daysOfWeek[i]) + "\"";
-      if (alarmDays[i]) html += " checked"; // Preserve checkbox state
+      if (alarmDays[i]) html += " checked";  // Preserve checkbox state
       html += "> " + String(daysOfWeek[i]) + "<br>";
     }
 
@@ -572,10 +591,10 @@ void setup() {
 
     // 2nd alarm days of the week checkboxes
     html += "<label>Days:</label><br>";
-    const char* daysOfWeek2[] = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
+    const char* daysOfWeek2[] = { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" };
     for (int i = 0; i < 7; i++) {
       html += "<input type=\"checkbox\" name=\"alarm2" + String(daysOfWeek2[i]) + "\"";
-      if (alarmDays2[i]) html += " checked"; // Preserve checkbox state
+      if (alarmDays2[i]) html += " checked";  // Preserve checkbox state
       html += "> " + String(daysOfWeek2[i]) + "<br>";
     }
 
@@ -585,48 +604,48 @@ void setup() {
     server.send(200, "text/html", html);
   });
 
-// Handle timezone change
-server.on("/setTimezone", HTTP_POST, []() {
+  // Handle timezone change
+  server.on("/setTimezone", HTTP_POST, []() {
     if (server.hasArg("timezone")) {
-        String timezone = server.arg("timezone");
-        newTimeZone(timezone);
+      String timezone = server.arg("timezone");
+      newTimeZone(timezone);
     }
     server.send(200, "text/html", "<html><body><h2>Timezone Updated</h2><a href=\"/\">Go Back</a></body></html>");
-});
+  });
 
-// Handle alarm settings update
-server.on("/setAlarm", HTTP_POST, []() {
+  // Handle alarm settings update
+  server.on("/setAlarm", HTTP_POST, []() {
     if (server.hasArg("alrm")) {
-        alrm = server.arg("alrm");
-        Serial.printf("Alarm Time set to: %s\n", alrm.c_str());
+      alrm = server.arg("alrm");
+      Serial.printf("Alarm Time set to: %s\n", alrm.c_str());
     }
 
-    const char* daysOfWeek[] = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
+    const char* daysOfWeek[] = { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" };
     for (int i = 0; i < 7; i++) {
-        // Check if each day is selected
-        alarmDays[i] = server.hasArg("alarm" + String(daysOfWeek[i]));
-        Serial.printf("Alarm for %s: %s\n", daysOfWeek[i], alarmDays[i] ? "On" : "Off");
+      // Check if each day is selected
+      alarmDays[i] = server.hasArg("alarm" + String(daysOfWeek[i]));
+      Serial.printf("Alarm for %s: %s\n", daysOfWeek[i], alarmDays[i] ? "On" : "Off");
     }
 
     server.send(200, "text/html", "<html><body><h2>Alarm Settings Updated</h2><a href=\"/\">Go Back</a></body></html>");
-});
+  });
 
-// Handle 2nd alarm settings update
-server.on("/setAlarm2", HTTP_POST, []() {
+  // Handle 2nd alarm settings update
+  server.on("/setAlarm2", HTTP_POST, []() {
     if (server.hasArg("alrm2")) {
-        alrm2 = server.arg("alrm2");
-        Serial.printf("Alarm Time set to: %s\n", alrm2.c_str());
+      alrm2 = server.arg("alrm2");
+      Serial.printf("Alarm Time set to: %s\n", alrm2.c_str());
     }
 
-    const char* daysOfWeek2[] = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
+    const char* daysOfWeek2[] = { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" };
     for (int i = 0; i < 7; i++) {
-        // Check if each day is selected
-        alarmDays2[i] = server.hasArg("alarm2" + String(daysOfWeek2[i]));
-        Serial.printf("Alarm for %s: %s\n", daysOfWeek2[i], alarmDays2[i] ? "On" : "Off");
+      // Check if each day is selected
+      alarmDays2[i] = server.hasArg("alarm2" + String(daysOfWeek2[i]));
+      Serial.printf("Alarm for %s: %s\n", daysOfWeek2[i], alarmDays2[i] ? "On" : "Off");
     }
 
     server.send(200, "text/html", "<html><body><h2>Alarm Settings Updated</h2><a href=\"/\">Go Back</a></body></html>");
-});
+  });
 
   server.begin();
 }
@@ -652,21 +671,20 @@ void loop() {
 
 void printLocalTime() {
   struct tm timeinfo;
-  
+
   if (!getLocalTime(&timeinfo)) {
     Serial.println("Failed to obtain time");
     return;
   }
   Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
   char timeBuffer[50];
-  String lastDisplayedTime = "";  // Stores the last displayed time    
-    strftime(timeBuffer, sizeof(timeBuffer), "%H:%M", &timeinfo);
-    if (timeBuffer != lastDisplayedTime) {
+  strftime(timeBuffer, sizeof(timeBuffer), "%H:%M", &timeinfo);
+  if (timeBuffer != lastDisplayedTime) {
     display.clear();
     display.drawString(0, 0, String(timeBuffer));
-    display.display(); // Ensure to refresh the e-paper display
+    display.display();               // Ensure to refresh the e-paper display
     lastDisplayedTime = timeBuffer;  // Update the stored time
- }
+  }
 }
 
 void newTimeZone(const String& timezone) {
@@ -682,9 +700,9 @@ void checkAlarm() {
   }
 
   // Check if the current day is selected for the alarm
-  int dayIndex = (timeinfo.tm_wday + 6) % 7; // Adjusting for Sunday as 0 in `tm_wday`
+  int dayIndex = (timeinfo.tm_wday + 6) % 7;  // Adjusting for Sunday as 0 in `tm_wday`
   if (!alarmDays[dayIndex]) {
-    alarmTriggered = false; // Reset alarm if it's a new day
+    alarmTriggered = false;  // Reset alarm if it's a new day
     return;
   }
 
@@ -694,10 +712,9 @@ void checkAlarm() {
   if (alrm == currentTime && !alarmTriggered) {
     Serial.println("Alarm! It's time to wake up!");
     // Add actions here, e.g., turn on LED or buzzer
-    alarmTriggered = true; // Set to true to prevent retriggering within the same minute
-  }
-  else if (alrm != currentTime) {
-    alarmTriggered = false; // Reset when current time is different
+    alarmTriggered = true;  // Set to true to prevent retriggering within the same minute
+  } else if (alrm != currentTime) {
+    alarmTriggered = false;  // Reset when current time is different
   }
 }
 
@@ -708,9 +725,9 @@ void checkAlarm2() {
   }
 
   // Check if the current day is selected for the alarm
-  int dayIndex2 = (timeinfo.tm_wday + 6) % 7; // Adjusting for Sunday as 0 in `tm_wday`
+  int dayIndex2 = (timeinfo.tm_wday + 6) % 7;  // Adjusting for Sunday as 0 in `tm_wday`
   if (!alarmDays2[dayIndex2]) {
-    alarmTriggered2 = false; // Reset alarm if it's a new day
+    alarmTriggered2 = false;  // Reset alarm if it's a new day
     return;
   }
 
@@ -720,10 +737,9 @@ void checkAlarm2() {
   if (alrm2 == currentTime && !alarmTriggered2) {
     Serial.println("Alarm! It's time to wake up!");
     // Add actions here, e.g., turn on LED or buzzer
-    alarmTriggered2 = true; // Set to true to prevent retriggering within the same minute
-  }
-  else if (alrm2 != currentTime) {
-    alarmTriggered2 = false; // Reset when current time is different
+    alarmTriggered2 = true;  // Set to true to prevent retriggering within the same minute
+  } else if (alrm2 != currentTime) {
+    alarmTriggered2 = false;  // Reset when current time is different
   }
 }
 
