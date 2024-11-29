@@ -9,7 +9,10 @@
 //Heltec E290
 #include <heltec-eink-modules.h>
 #include "Fonts/FreeSans9pt7b.h"
+#include "Fonts/FreeSans18pt7b.h"
 #include "Fonts/FreeSans24pt7b.h"
+#include "Custom_Fonts/FreeSans40pt7b.h"
+
 // Wiring (SPI Displays only)
          #define PIN_DC   2
          #define PIN_CS   4
@@ -30,6 +33,8 @@ const int daylightOffset_sec = 3600;
 
 // Variable for screen update based on current time
 String lastDisplayedTime = "";  // Stores the last displayed time
+String lastDisplayedHr = "";  // Stores the last displayed hour
+String lastDisplayedDate = ""; //Stores the last displayed date
 
 // Create an instance of the Webserver
 WebServer server(80);
@@ -704,30 +709,36 @@ void printLocalTime() {
   Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
   char timeBuffer[50];
   char timeBufferHr[50];
-  strftime(timeBuffer, sizeof(timeBuffer), "%H:%M", &timeinfo);
-  strftime(timeBufferHr, sizeof(timeBufferHr), "%H:0", &timeinfo);
+  char dateBuffer[50];
+  strftime(timeBuffer, sizeof(timeBuffer), "%H:%M", &timeinfo); //Creating timeBuffer string from NTP timeinfo String
+  strftime(timeBufferHr, sizeof(timeBufferHr), "%H", &timeinfo); //Creating timeBufferHr string from NTP timeinfo String
+  strftime(dateBuffer, sizeof(dateBuffer), "%A, %B %d %Y", &timeinfo); //Creating dateBuffer string from NTP timeinfo String
+
   if (timeBuffer != lastDisplayedTime) {
-    
-    display.setWindow( display.left(), display.top(), display.width(), display.height() - 35 ); // Don't overwrite the bottom 35px
+    Serial.println("Hour buffer");
+    Serial.println(timeBufferHr);
+    Serial.println("Time Buffer");
+    Serial.println(timeBuffer);
+    display.setWindow( display.left(), display.top(), display.width(), display.height() /* - 35 */ ); // Don't overwrite the bottom 35px
+
     DRAW (display) {
-    //display.setCursor(50, 50);
-    display.printCenter(String(lastDisplayedTime));
+    printTime(timeBuffer, dateBuffer);
     }
-    DRAW (display) {
-    //display.setCursor(50, 50);
-    display.printCenter(String(timeBuffer));
-    }
-    
-    
-    //display.update();               // Ensure to refresh the e-paper display
-    
-    if (timeBufferHr == lastDisplayedTime) {
+      
+    if (timeBufferHr != lastDisplayedHr) { //The minute = 0 (New hour), then do full refresh of e-paper
+      display.fastmodeOff();
       display.clear();
-      display.printCenter(String(timeBuffer)); // make this maybe into its own function All the display stuff so that it isn't copy and paste
+      delay(2000);
+      display.fastmodeOn();
+      DRAW (display) {
+      printTime(timeBuffer, dateBuffer);
+      }
     }
 
-    lastDisplayedTime = timeBuffer;  // Update the stored time
   }
+
+  lastDisplayedTime = timeBuffer;  // Update the stored time
+  lastDisplayedHr = timeBufferHr;  // Update the stored hour
 }
 
 void newTimeZone(const String& timezone) {
@@ -791,3 +802,18 @@ void VextON(void) {
   pinMode(18, OUTPUT);
   digitalWrite(18, HIGH);
 }
+
+void printTime(const String& tb, const String& db) { //tb = timebuffer
+  display.setFont( &FreeSans40pt7b );
+  display.printCenter(tb);
+  printDate(db);
+}
+
+void printDate(const String& db) { // db = datebuffer
+  Serial.println("Print Date");
+  display.setFont( &FreeSans9pt7b );
+  //display.setCursor(0,150);
+  //display.setWindow( display.left(), display.top() + 100, display.width(), display.height() ); // Don't overwrite the bottom 35px
+  display.println(db);
+}
+
