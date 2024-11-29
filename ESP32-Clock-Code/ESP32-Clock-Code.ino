@@ -3,6 +3,8 @@
 #include <WiFi.h>
 #include <time.h>
 #include "images.h"
+//#include <Tone.h>
+
 
 //Heltec E290
 #include <heltec-eink-modules.h>
@@ -42,9 +44,12 @@ String alrm2 = "07:00";                                                    // 2n
 bool alarmDays2[7] = { false, false, false, false, false, false, false };  // For each day of the week
 bool alarmTriggered2 = false;
 
+//Buzzer pin
+int buzzer = 3; //GPIO 3
+
 void setup() {
   Serial.begin(115200);
-
+  pinMode(buzzer, OUTPUT);
   // Display setup
   //if (DIRECTION == ANGLE_0_DEGREE || DIRECTION == ANGLE_180_DEGREE) {}
   VextON();
@@ -698,22 +703,30 @@ void printLocalTime() {
   }
   Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
   char timeBuffer[50];
+  char timeBufferHr[50];
   strftime(timeBuffer, sizeof(timeBuffer), "%H:%M", &timeinfo);
+  strftime(timeBufferHr, sizeof(timeBufferHr), "%H:0", &timeinfo);
   if (timeBuffer != lastDisplayedTime) {
+    
     display.setWindow( display.left(), display.top(), display.width(), display.height() - 35 ); // Don't overwrite the bottom 35px
     DRAW (display) {
-    display.clear();
-    display.setCursor(50, 50);
-    display.print(String(timeBuffer));
+    //display.setCursor(50, 50);
+    display.printCenter(String(lastDisplayedTime));
     }
-    DRAW (display){
-      display.setCursor(50, 50);
-      display.print(String(timeBuffer));
+    DRAW (display) {
+    //display.setCursor(50, 50);
+    display.printCenter(String(timeBuffer));
     }
+    
     
     //display.update();               // Ensure to refresh the e-paper display
-    lastDisplayedTime = timeBuffer;  // Update the stored time
     
+    if (timeBufferHr == lastDisplayedTime) {
+      display.clear();
+      display.printCenter(String(timeBuffer)); // make this maybe into its own function All the display stuff so that it isn't copy and paste
+    }
+
+    lastDisplayedTime = timeBuffer;  // Update the stored time
   }
 }
 
@@ -767,6 +780,7 @@ void checkAlarm2() {
   if (alrm2 == currentTime && !alarmTriggered2) {
     Serial.println("Alarm! It's time to wake up!");
     // Add actions here, e.g., turn on LED or buzzer
+    //tone(3, 400, 1);
     alarmTriggered2 = true;  // Set to true to prevent retriggering within the same minute
   } else if (alrm2 != currentTime) {
     alarmTriggered2 = false;  // Reset when current time is different
