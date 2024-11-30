@@ -812,8 +812,9 @@ void printTime(const String& tb, const String& db) { //tb = timebuffer
 void printDate(const String& db) { // db = datebuffer
   Serial.println("Print Date");
   display.setFont( &FreeSans9pt7b );
-  //display.setCursor(0,150);
+  int textWidth = strlen(db.c_str()) * 9;
+  display.setCursor((296 - textWidth)/2, 114);
   //display.setWindow( display.left(), display.top() + 100, display.width(), display.height() ); // Don't overwrite the bottom 35px
-  display.println(db);
+  display.print(db);
 }
 
