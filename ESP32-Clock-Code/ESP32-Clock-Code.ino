@@ -710,31 +710,35 @@ void printLocalTime() {
   char timeBuffer[50];
   char timeBufferHr[50];
   char dateBuffer[50];
-  strftime(timeBuffer, sizeof(timeBuffer), "%H:%M", &timeinfo); //Creating timeBuffer string from NTP timeinfo String
+  char min[10];
+  char hr[10];
+  strftime(timeBuffer, sizeof(timeBuffer), "%H %M", &timeinfo); //Creating timeBuffer string from NTP timeinfo String
   strftime(timeBufferHr, sizeof(timeBufferHr), "%H", &timeinfo); //Creating timeBufferHr string from NTP timeinfo String
   strftime(dateBuffer, sizeof(dateBuffer), "%A, %B %d %Y", &timeinfo); //Creating dateBuffer string from NTP timeinfo String
+  // Time in min and hr used that will be displayed
+  strftime(min, sizeof(min), "%M", &timeinfo); //Creating dateBuffer string from NTP timeinfo String
+  strftime(hr, sizeof(hr), "%H", &timeinfo); //Creating dateBuffer string from NTP timeinfo String
 
-  if (timeBuffer != lastDisplayedTime) {
-    Serial.println("Hour buffer");
-    Serial.println(timeBufferHr);
-    Serial.println("Time Buffer");
-    Serial.println(timeBuffer);
-    display.setWindow( display.left(), display.top(), display.width(), display.height() /* - 35 */ ); // Don't overwrite the bottom 35px
 
-    DRAW (display) {
-    printTime(timeBuffer, dateBuffer);
-    }
-      
-    if (timeBufferHr != lastDisplayedHr) { //The minute = 0 (New hour), then do full refresh of e-paper
+  if (timeBufferHr != lastDisplayedHr) { //The minute = 0 (New hour), then do full refresh of e-paper
       display.fastmodeOff();
       display.clear();
       delay(2000);
       display.fastmodeOn();
       DRAW (display) {
-      printTime(timeBuffer, dateBuffer);
+      printTime(min, hr, dateBuffer);
       }
     }
-
+    else if (timeBuffer != lastDisplayedTime) {
+    Serial.println("Hour buffer");
+    Serial.println(timeBufferHr);
+    Serial.println("Time Buffer");
+    Serial.println(timeBuffer);
+    display.setWindow( display.left(), display.top(), display.width(), display.height() /* - 35 */ ); // Don't overwrite the bottom 35px
+    DRAW (display) {
+    printTime(min, hr, dateBuffer);
+    }
+      
   }
 
   lastDisplayedTime = timeBuffer;  // Update the stored time
@@ -762,7 +766,7 @@ void checkAlarm() {
 
   // Format current time and check if it matches the alarm time
   char currentTime[6];
-  strftime(currentTime, sizeof(currentTime), "%H:%M", &timeinfo);
+  strftime(currentTime, sizeof(currentTime), "%H %M", &timeinfo);
   if (alrm == currentTime && !alarmTriggered) {
     Serial.println("Alarm! It's time to wake up!");
     // Add actions here, e.g., turn on LED or buzzer
@@ -787,7 +791,7 @@ void checkAlarm2() {
 
   // Format current time and check if it matches the alarm time
   char currentTime[6];
-  strftime(currentTime, sizeof(currentTime), "%H:%M", &timeinfo);
+  strftime(currentTime, sizeof(currentTime), "%H %M", &timeinfo);
   if (alrm2 == currentTime && !alarmTriggered2) {
     Serial.println("Alarm! It's time to wake up!");
     // Add actions here, e.g., turn on LED or buzzer
@@ -803,9 +807,12 @@ void VextON(void) {
   digitalWrite(18, HIGH);
 }
 
-void printTime(const String& tb, const String& db) { //tb = timebuffer
+void printTime(const String& min, const String& hr, const String& db) { //tb = timebuffer
   display.setFont( &FreeSans40pt7b );
-  display.printCenter(tb);
+  display.setCursor(((196 - 126) / 2) + 15 /* + C, where C is an adjustment to get time centered */, 80); //aprox length of time is 126pixels used measurements of screen
+  display.print(hr);
+  display.print(":");
+  display.print(min);
   printDate(db);
 }
 
@@ -813,7 +820,7 @@ void printDate(const String& db) { // db = datebuffer
   Serial.println("Print Date");
   display.setFont( &FreeSans9pt7b );
   int textWidth = strlen(db.c_str()) * 9;
-  display.setCursor((296 - textWidth)/2, 114);
+  display.setCursor((296 - textWidth) / 2, 114);
   //display.setWindow( display.left(), display.top() + 100, display.width(), display.height() ); // Don't overwrite the bottom 35px
   display.print(db);
 }
