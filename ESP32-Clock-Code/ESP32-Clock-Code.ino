@@ -53,6 +53,8 @@ bool alarmTriggered2 = false;
 int buzzer = 17; //GPIO 17
 // Button pin
 const int buttonPin = 46;
+int buttonState = 0;  // variable for reading the pushbutton status
+
 
 void setup() {
   Serial.begin(115200);
@@ -769,7 +771,7 @@ void checkAlarm() {
 
   // Format current time and check if it matches the alarm time
   char currentTime[6];
-  strftime(currentTime, sizeof(currentTime), "%H %M", &timeinfo);
+  strftime(currentTime, sizeof(currentTime), "%H:%M", &timeinfo);
   if (alrm == currentTime && !alarmTriggered) {
     Serial.println("Alarm! It's time to wake up!");
     // Add actions here, e.g., turn on LED or buzzer
@@ -795,7 +797,7 @@ void checkAlarm2() {
 
   // Format current time and check if it matches the alarm time
   char currentTime[6];
-  strftime(currentTime, sizeof(currentTime), "%H %M", &timeinfo);
+  strftime(currentTime, sizeof(currentTime), "%H:M", &timeinfo);
   if (alrm2 == currentTime && !alarmTriggered2) {
     Serial.println("Alarm! It's time to wake up!");
     // Add actions here, e.g., turn on LED or buzzer
@@ -807,13 +809,14 @@ void checkAlarm2() {
   }
 }
 
-void Alarm(void) {
+void Alarm() {
   buttonState = digitalRead(buttonPin);
-  for (buttonState == LOW)) {
-    if (buttonState == HIGH) {
-      break;
-    }
-  tone(buzzer, 1000); // Send 1KHz sound signal...
+  Serial.println("Alarm Buzzer activated");
+  if (buttonState == HIGH) {
+    return;
+  }
+  else {
+    tone(buzzer, 1000); // Send 1KHz sound signal...
   delay(1000);        // ...for 1 sec
   noTone(buzzer);     // Stop sound...
   delay(1000);        // ...for 1sec
