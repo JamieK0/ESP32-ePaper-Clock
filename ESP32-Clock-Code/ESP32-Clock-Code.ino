@@ -50,11 +50,14 @@ bool alarmDays2[7] = { false, false, false, false, false, false, false };  // Fo
 bool alarmTriggered2 = false;
 
 //Buzzer pin
-int buzzer = 3; //GPIO 3
+int buzzer = 17; //GPIO 17
+// Button pin
+const int buttonPin = 46;
 
 void setup() {
   Serial.begin(115200);
   pinMode(buzzer, OUTPUT);
+  pinMode(buttonPin, INPUT);
   // Display setup
   //if (DIRECTION == ANGLE_0_DEGREE || DIRECTION == ANGLE_180_DEGREE) {}
   VextON();
@@ -770,6 +773,7 @@ void checkAlarm() {
   if (alrm == currentTime && !alarmTriggered) {
     Serial.println("Alarm! It's time to wake up!");
     // Add actions here, e.g., turn on LED or buzzer
+    Alarm();
     alarmTriggered = true;  // Set to true to prevent retriggering within the same minute
   } else if (alrm != currentTime) {
     alarmTriggered = false;  // Reset when current time is different
@@ -795,10 +799,24 @@ void checkAlarm2() {
   if (alrm2 == currentTime && !alarmTriggered2) {
     Serial.println("Alarm! It's time to wake up!");
     // Add actions here, e.g., turn on LED or buzzer
+    Alarm();
     //tone(3, 400, 1);
     alarmTriggered2 = true;  // Set to true to prevent retriggering within the same minute
   } else if (alrm2 != currentTime) {
     alarmTriggered2 = false;  // Reset when current time is different
+  }
+}
+
+void Alarm(void) {
+  buttonState = digitalRead(buttonPin);
+  for (buttonState == LOW)) {
+    if (buttonState == HIGH) {
+      break;
+    }
+  tone(buzzer, 1000); // Send 1KHz sound signal...
+  delay(1000);        // ...for 1 sec
+  noTone(buzzer);     // Stop sound...
+  delay(1000);        // ...for 1sec
   }
 }
 
@@ -824,4 +842,6 @@ void printDate(const String& db) { // db = datebuffer
   //display.setWindow( display.left(), display.top() + 100, display.width(), display.height() ); // Don't overwrite the bottom 35px
   display.print(db);
 }
+
+
 
