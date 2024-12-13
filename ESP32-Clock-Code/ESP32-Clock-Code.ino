@@ -816,11 +816,18 @@ void Alarm() {
     return;
   }
   else {
+  for (int i = 0; i < 60; i++) {
     tone(buzzer, 1000); // Send 1KHz sound signal...
   delay(1000);        // ...for 1 sec
   noTone(buzzer);     // Stop sound...
   delay(1000);        // ...for 1sec
+  if (buttonState == HIGH) {
+    noTone(buzzer);     // Stop sound...
+    Serial.println("button pressed");
+    return;
   }
+  }
+}
 }
 
 void VextON(void) {
