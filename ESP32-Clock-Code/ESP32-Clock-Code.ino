@@ -55,11 +55,15 @@ int buzzer = 17; //GPIO 17
 const int buttonPin = 46;
 int buttonState = 0;  // variable for reading the pushbutton status
 
+//White LED
+const int ledPin = 45;
+
 
 void setup() {
   Serial.begin(115200);
   pinMode(buzzer, OUTPUT);
   pinMode(buttonPin, INPUT);
+  pinMode(ledPin, OUTPUT);
   // Display setup
   //if (DIRECTION == ANGLE_0_DEGREE || DIRECTION == ANGLE_180_DEGREE) {}
   VextON();
@@ -812,23 +816,20 @@ void checkAlarm2() {
 void Alarm() {
   buttonState = digitalRead(buttonPin);
   Serial.println("Alarm Buzzer activated");
-  if (buttonState == HIGH) {
-    return;
-  }
-  else {
   for (int i = 0; i < 60; i++) {
-    tone(buzzer, 1000); // Send 1KHz sound signal...
+  if (buttonState == HIGH) {
+    break;
+  }
+  tone(buzzer, 1000); // Send 1KHz sound signal...
   delay(1000);        // ...for 1 sec
   noTone(buzzer);     // Stop sound...
   delay(1000);        // ...for 1sec
-  if (buttonState == HIGH) {
-    noTone(buzzer);     // Stop sound...
-    Serial.println("button pressed");
-    return;
+  digitalWrite(ledPin, HIGH);
+  Serial.println(buttonState);
+  Serial.println(i);
   }
   }
-}
-}
+
 
 void VextON(void) {
   pinMode(18, OUTPUT);
