@@ -3,7 +3,7 @@
 #include <WiFi.h>
 #include <time.h>
 #include "images.h"
-//#include <Tone.h>
+#include <ESPmDNS.h>
 
 
 //Heltec E290
@@ -140,6 +140,23 @@ void setup() {
     printLocalTime();
     
   }
+
+  // mDNS setup
+  // Set up mDNS responder:
+  // - first argument is the domain name, in this example
+  //   the fully-qualified domain name is "esp32.local"
+  // - second argument is the IP address to advertise
+  //   we send our IP address on the WiFi network
+  if (!MDNS.begin("clock")) {
+    Serial.println("Error setting up MDNS responder!");
+    while (1) {
+      delay(1000);
+    }
+  }
+  Serial.println("mDNS responder started");
+  // Add service to MDNS-SD
+  MDNS.addService("http", "tcp", 80);
+
 
   // Web server setup
   server.on("/", HTTP_GET, []() {
