@@ -50,9 +50,9 @@ bool alarmDays2[7] = { false, false, false, false, false, false, false };  // Fo
 bool alarmTriggered2 = false;
 
 //Buzzer pin
-int buzzer = 17; //GPIO 17
+int buzzer = 8; //GPIO 8
 // Button pin
-const int buttonPin = 46;
+const int buttonPin = 17;
 int buttonState = 0;  // variable for reading the pushbutton status
 
 //White LED
