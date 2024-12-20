@@ -51,18 +51,33 @@ bool alarmTriggered2 = false;
 
 //Buzzer pin
 int buzzer = 8; //GPIO 8
+
 // Button pin
 const int buttonPin = 17;
 int buttonState = 0;  // variable for reading the pushbutton status
+unsigned long button_time = 0;  // used for button debounce
+unsigned long last_button_time = 0; // used for button debounce
+bool buttonPressed = false;
 
 //White LED
 const int ledPin = 45;
+
+void IRAM_ATTR isr() {
+  button_time = millis();
+if (button_time - last_button_time > 250)
+{
+        //button1.numberKeyPresses++;
+        buttonPressed = true;
+       last_button_time = button_time;
+}
+}
 
 
 void setup() {
   Serial.begin(115200);
   pinMode(buzzer, OUTPUT);
-  pinMode(buttonPin, INPUT);
+  pinMode(buttonPin, INPUT_PULLUP);
+  attachInterrupt(buttonPin, isr, FALLING); // Button ISR interrupt
   pinMode(ledPin, OUTPUT);
   // Display setup
   //if (DIRECTION == ANGLE_0_DEGREE || DIRECTION == ANGLE_180_DEGREE) {}
@@ -805,9 +820,8 @@ void checkAlarm2() {
   if (alrm2 == currentTime && !alarmTriggered2) {
     Serial.println("Alarm! It's time to wake up!");
     // Add actions here, e.g., turn on LED or buzzer
-    Alarm();
-    //tone(3, 400, 1);
     alarmTriggered2 = true;  // Set to true to prevent retriggering within the same minute
+    Alarm();
   } else if (alrm2 != currentTime) {
     alarmTriggered2 = false;  // Reset when current time is different
   }
@@ -817,9 +831,6 @@ void Alarm() {
   buttonState = digitalRead(buttonPin);
   Serial.println("Alarm Buzzer activated");
   for (int i = 0; i < 60; i++) {
-  if (buttonState == HIGH) {
-    break;
-  }
   tone(buzzer, 1000); // Send 1KHz sound signal...
   delay(1000);        // ...for 1 sec
   noTone(buzzer);     // Stop sound...
@@ -827,6 +838,11 @@ void Alarm() {
   digitalWrite(ledPin, HIGH);
   Serial.println(buttonState);
   Serial.println(i);
+  if (buttonPressed == true) {
+    buttonPressed = false;
+    noTone(buzzer);     // Stop sound...
+    break; // exit for loop
+  }
   }
   }
 
