@@ -840,6 +840,7 @@ void Alarm() {
   Serial.println(i);
   if (buttonPressed == true) {
     buttonPressed = false;
+    digitalWrite(ledPin, LOW);
     noTone(buzzer);     // Stop sound...
     break; // exit for loop
   }
