@@ -59,6 +59,7 @@ int buttonState = 0;  // variable for reading the pushbutton status
 unsigned long button_time = 0;  // used for button debounce
 unsigned long last_button_time = 0; // used for button debounce
 bool buttonPressed = false;
+bool ipDisplay = false;
 
 //White LED
 const int ledPin = 45;
@@ -68,9 +69,9 @@ unsigned long last_led_time = 0; // used for led timer
 
 void IRAM_ATTR isr() {
   button_time = millis();
-if (button_time - last_button_time > 250) {
-    buttonPressed = true;
+if (button_time - last_button_time > 1500) {
     last_button_time = button_time;
+    buttonPressed = true; 
   }
 }
 
@@ -739,13 +740,16 @@ void loop() {
   checkAlarm();
   checkAlarm2();
   if (buttonPressed == true && ledActivated == 0) {
+    Serial.println("button pressed");
     digitalWrite(ledPin, HIGH);
     ledActivated = 1;
-    led_time = millis();
+    last_led_time = millis();
   }
 
   else if (buttonPressed == true && ledActivated == 1) {
     buttonPressed = false;
+    ipDisplay = true;
+    Serial.println("button pressed");
     display.clear();
     display.fastmodeOff();
     display.setFont( &FreeSans9pt7b );
@@ -753,17 +757,16 @@ void loop() {
     display.setCursor(0, 15);
     display.println("Change clock configuration by going to the following URL in your browser ");
     display.print("clock.local,");
-    display.print(" or alternatively go to ");
+    display.print(" or alternatively go to       ");
     display.println(WiFi.localIP());
-    display.print(" instead.");
+    display.println(" instead.");
     display.update();
-    display.fastmodeOn();
     buttonPressed = false;
   }
 
   // check led timer
+  led_time = millis();
   if (led_time - last_led_time > 30000) { // 30 000 millis = 30 seconds
-    last_led_time = led_time;
     ledActivated = 0;
     digitalWrite(ledPin, LOW);
   }
@@ -803,6 +806,11 @@ void printLocalTime() {
       }
     }
     else if (timeBuffer != lastDisplayedTime) {
+      if (ipDisplay == true) {
+        ipDisplay = false;
+        display.clear();
+        display.fastmodeOn();
+      }
     Serial.println("Hour buffer");
     Serial.println(timeBufferHr);
     Serial.println("Time Buffer");
