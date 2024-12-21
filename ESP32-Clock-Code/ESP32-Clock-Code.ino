@@ -62,6 +62,9 @@ bool buttonPressed = false;
 
 //White LED
 const int ledPin = 45;
+bool ledActivated = 0;
+unsigned long led_time = 0;  // used for led timer
+unsigned long last_led_time = 0; // used for led timer
 
 void IRAM_ATTR isr() {
   button_time = millis();
@@ -735,7 +738,13 @@ void loop() {
   server.handleClient();
   checkAlarm();
   checkAlarm2();
-  if (buttonPressed == true) {
+  if (buttonPressed == true && ledActivated == 0) {
+    digitalWrite(ledPin, HIGH);
+    ledActivated = 1;
+    led_time = millis();
+  }
+
+  else if (buttonPressed == true && ledActivated == 1) {
     buttonPressed = false;
     display.clear();
     display.fastmodeOff();
@@ -751,6 +760,14 @@ void loop() {
     display.fastmodeOn();
     buttonPressed = false;
   }
+
+  // check led timer
+  if (led_time - last_led_time > 30000) { // 30 000 millis = 30 seconds
+    last_button_time = button_time;
+    ledActivated = 0;
+    digitalWrite(ledPin, LOW);
+  }
+
   delay(1000);
   printLocalTime();
 }
@@ -869,12 +886,14 @@ void Alarm() {
   noTone(buzzer);     // Stop sound...
   delay(1000);        // ...for 1sec
   digitalWrite(ledPin, HIGH);
+  ledActivated = 1;
   Serial.println(buttonState);
   Serial.println(i);
   if (buttonPressed == true) {
     buttonPressed = false;
     alarmOn = false;
     digitalWrite(ledPin, LOW);
+    ledActivated = 0;
     noTone(buzzer);     // Stop sound...
     break; // exit for loop
   }
