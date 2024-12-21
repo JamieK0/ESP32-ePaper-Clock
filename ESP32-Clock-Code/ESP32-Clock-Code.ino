@@ -4,7 +4,8 @@
 #include <time.h>
 #include "images.h"
 #include <ESPmDNS.h>
-
+#include "pitches.h"
+#include "music.h"
 
 //Heltec E290
 #include <heltec-eink-modules.h>
@@ -51,6 +52,7 @@ bool alarmTriggered2 = false;
 
 //Buzzer pin
 int buzzer = 8; //GPIO 8
+#define BUZZER_PIN 8
 bool alarmOn = false;
 
 // Button pin
@@ -887,16 +889,35 @@ void checkAlarm2() {
 void Alarm() {
   alarmOn = true;
   buttonState = digitalRead(buttonPin);
+  
   Serial.println("Alarm Buzzer activated");
-  for (int i = 0; i < 60; i++) {
+  for (int i = 0; i < 15; i++) {
   tone(buzzer, 1000); // Send 1KHz sound signal...
   delay(1000);        // ...for 1 sec
   noTone(buzzer);     // Stop sound...
-  delay(1000);        // ...for 1sec
+  delay(1000);        // ...for 1sec 
+
+  // plays a song
+  int size = sizeof(tetris_durations) / sizeof(int);
+
+  for (int note = 0; note < size; note++) {
+    //to calculate the note duration, take one second divided by the note type.
+    //e.g. quarter note = 1000 / 4, eighth note = 1000/8, etc.
+    int duration = 1000 / tetris_durations[note];
+    tone(BUZZER_PIN, tetris_melody[note], duration);
+
+    //to distinguish the notes, set a minimum time between them.
+    //the note's duration + 30% seems to work well:
+    int pauseBetweenNotes = duration * 1.30;
+    delay(pauseBetweenNotes);
+    
+    //stop the tone playing:
+    noTone(BUZZER_PIN);
+
   digitalWrite(ledPin, HIGH);
   ledActivated = 1;
   Serial.println(buttonState);
-  Serial.println(i);
+  //Serial.println(i);
   if (buttonPressed == true) {
     buttonPressed = false;
     alarmOn = false;
@@ -907,6 +928,8 @@ void Alarm() {
   }
   }
   }
+}
+  
 
 
 void VextON(void) {
