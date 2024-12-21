@@ -763,7 +763,7 @@ void loop() {
 
   // check led timer
   if (led_time - last_led_time > 30000) { // 30 000 millis = 30 seconds
-    last_button_time = button_time;
+    last_led_time = led_time;
     ledActivated = 0;
     digitalWrite(ledPin, LOW);
   }
