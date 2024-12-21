@@ -51,6 +51,7 @@ bool alarmTriggered2 = false;
 
 //Buzzer pin
 int buzzer = 8; //GPIO 8
+bool alarmOn = false;
 
 // Button pin
 const int buttonPin = 17;
@@ -64,12 +65,10 @@ const int ledPin = 45;
 
 void IRAM_ATTR isr() {
   button_time = millis();
-if (button_time - last_button_time > 250)
-{
-        //button1.numberKeyPresses++;
-        buttonPressed = true;
-       last_button_time = button_time;
-}
+if (button_time - last_button_time > 250) {
+    buttonPressed = true;
+    last_button_time = button_time;
+  }
 }
 
 
@@ -736,6 +735,22 @@ void loop() {
   server.handleClient();
   checkAlarm();
   checkAlarm2();
+  if (buttonPressed == true) {
+    buttonPressed = false;
+    display.clear();
+    display.fastmodeOff();
+    display.setFont( &FreeSans9pt7b );
+    //display.setFont(ArialMT_Plain_10);
+    display.setCursor(0, 15);
+    display.println("Change clock configuration by going to the following URL in your browser ");
+    display.print("clock.local,");
+    display.print(" or alternatively go to ");
+    display.println(WiFi.localIP());
+    display.print(" instead.");
+    display.update();
+    display.fastmodeOn();
+    buttonPressed = false;
+  }
   delay(1000);
   printLocalTime();
 }
@@ -845,6 +860,7 @@ void checkAlarm2() {
 }
 
 void Alarm() {
+  alarmOn = true;
   buttonState = digitalRead(buttonPin);
   Serial.println("Alarm Buzzer activated");
   for (int i = 0; i < 60; i++) {
@@ -857,6 +873,7 @@ void Alarm() {
   Serial.println(i);
   if (buttonPressed == true) {
     buttonPressed = false;
+    alarmOn = false;
     digitalWrite(ledPin, LOW);
     noTone(buzzer);     // Stop sound...
     break; // exit for loop
