@@ -75,7 +75,7 @@ unsigned long last_led_time = 0; // used for led timer
 
 void IRAM_ATTR isr() {
   button_time = millis();
-if (button_time - last_button_time > 1500) {
+if (button_time - last_button_time > 200) {
     last_button_time = button_time;
     buttonPressed = true; 
   }
