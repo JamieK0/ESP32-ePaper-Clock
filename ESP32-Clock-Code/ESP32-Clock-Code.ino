@@ -892,12 +892,12 @@ void checkAlarm2() {
 
   // Format current time and check if it matches the alarm time
   char currentTime[6];
-  strftime(currentTime, sizeof(currentTime), "%H:M", &timeinfo);
+  strftime(currentTime, sizeof(currentTime), "%H:%M", &timeinfo);
   if (alrm2 == currentTime && !alarmTriggered2) {
     Serial.println("Alarm! It's time to wake up!");
     // Add actions here, e.g., turn on LED or buzzer
-    alarmTriggered2 = true;  // Set to true to prevent retriggering within the same minute
     Alarm();
+    alarmTriggered2 = true;  // Set to true to prevent retriggering within the same minute
   } else if (alrm2 != currentTime) {
     alarmTriggered2 = false;  // Reset when current time is different
   }
@@ -931,11 +931,10 @@ void Alarm() {
     
     //stop the tone playing:
     noTone(BUZZER_PIN);
-
-  digitalWrite(ledPin, HIGH);
-  ledActivated = 1;
-  Serial.println(buttonState);
-  //Serial.println(i);
+    digitalWrite(ledPin, HIGH);
+    ledActivated = 1;
+    Serial.println(buttonState);
+    //Serial.println(i);
   if (buttonPressed == true) {
     buttonPressed = false;
     alarmOn = false;
