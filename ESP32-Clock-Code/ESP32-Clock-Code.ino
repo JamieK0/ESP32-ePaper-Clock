@@ -6,6 +6,7 @@
 #include <ESPmDNS.h>
 #include "pitches.h"
 #include "music.h"
+#include <Preferences.h>
 
 //Heltec E290
 #include <heltec-eink-modules.h>
@@ -27,6 +28,9 @@ typedef void (*Demo)(void);
 int demoMode = 0;
 int width, height;
 
+// Variables stored in flash initialisation
+Preferences preferences;
+
 //Clock Config
 #define TRIGGER_PIN 0
 const char* ntpServer = "pool.ntp.org";
@@ -42,13 +46,13 @@ WebServer server(80);
 
 // Global variable for timezone offset
 long gmtOffset_sec = 39600;                                               // Initial GMT offset, can be changed by user selection
-String alrm = "07:00";                                                    // Default alarm time
+String alrm = "07:00";
 bool alarmDays[7] = { false, false, false, false, false, false, false };  // For each day of the week
 bool alarmTriggered = false;
 
 String alrm2 = "07:00";                                                    // 2nd alarm time
 bool alarmDays2[7] = { false, false, false, false, false, false, false };  // For each day of the week
-bool alarmTriggered2 = false;
+bool alarmTriggered2 = false; 
 
 //Buzzer pin
 int buzzer = 8; //GPIO 8
@@ -86,6 +90,12 @@ void setup() {
   pinMode(ledPin, OUTPUT);
   // Display setup
   //if (DIRECTION == ANGLE_0_DEGREE || DIRECTION == ANGLE_180_DEGREE) {}
+  preferences.begin("my-app", false); // Open Preferences with my-app namespace.
+  alrm = preferences.getString("alrm", "05:00");      // Default alarm time
+  alrm2 = preferences.getString("alrm2", "07:00");
+  preferences.end();
+  loadAlarmDays(); // loads the values for each day from flash memory
+  loadAlarmDays2(); // loads the values for each day from flash memory
   VextON();
   delay(100);
   display.clear();
@@ -693,7 +703,11 @@ void setup() {
   server.on("/setAlarm", HTTP_POST, []() {
     if (server.hasArg("alrm")) {
       alrm = server.arg("alrm");
+      preferences.begin("my-app", false); // Open Preferences with my-app namespace.
+      preferences.putString("alrm", alrm.c_str());
+      preferences.end();
       Serial.printf("Alarm Time set to: %s\n", alrm.c_str());
+
     }
 
     const char* daysOfWeek[] = { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" };
@@ -702,7 +716,7 @@ void setup() {
       alarmDays[i] = server.hasArg("alarm" + String(daysOfWeek[i]));
       Serial.printf("Alarm for %s: %s\n", daysOfWeek[i], alarmDays[i] ? "On" : "Off");
     }
-
+    saveAlarmDays(); // stores alarm days into flash memory
     server.send(200, "text/html", "<html><body><h2>Alarm Settings Updated</h2><a href=\"/\">Go Back</a></body></html>");
   });
 
@@ -711,6 +725,9 @@ void setup() {
     if (server.hasArg("alrm2")) {
       alrm2 = server.arg("alrm2");
       Serial.printf("Alarm Time set to: %s\n", alrm2.c_str());
+      preferences.begin("my-app", false); // Open Preferences with my-app namespace.
+      preferences.putString("alrm2", alrm2.c_str());
+      preferences.end();
     }
 
     const char* daysOfWeek2[] = { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" };
@@ -719,7 +736,7 @@ void setup() {
       alarmDays2[i] = server.hasArg("alarm2" + String(daysOfWeek2[i]));
       Serial.printf("Alarm for %s: %s\n", daysOfWeek2[i], alarmDays2[i] ? "On" : "Off");
     }
-
+    saveAlarmDays2(); // stores alarm days into flash memory
     server.send(200, "text/html", "<html><body><h2>Alarm Settings Updated</h2><a href=\"/\">Go Back</a></body></html>");
   });
 
@@ -891,11 +908,12 @@ void Alarm() {
   buttonState = digitalRead(buttonPin);
   
   Serial.println("Alarm Buzzer activated");
-  for (int i = 0; i < 15; i++) {
+  /* for (int i = 0; i < 15; i++) {
   tone(buzzer, 1000); // Send 1KHz sound signal...
   delay(1000);        // ...for 1 sec
   noTone(buzzer);     // Stop sound...
-  delay(1000);        // ...for 1sec 
+  delay(1000);        // ...for 1sec  
+  }*/
 
   // plays a song
   int size = sizeof(tetris_durations) / sizeof(int);
@@ -927,10 +945,35 @@ void Alarm() {
     break; // exit for loop
   }
   }
-  }
+}
+
+// Alarm 1 flash memory
+void loadAlarmDays() {
+    preferences.begin("my-app", true);
+    preferences.getBytes("alarmDays", alarmDays, sizeof(alarmDays));
+    preferences.end();
 }
   
 
+void saveAlarmDays() {
+    preferences.begin("my-app", false);
+    preferences.putBytes("alarmDays", alarmDays, sizeof(alarmDays));
+    preferences.end();
+}
+
+// Alarm 2 flash memory
+void loadAlarmDays2() {
+    preferences.begin("my-app", true);
+    preferences.getBytes("alarmDays2", alarmDays2, sizeof(alarmDays2));
+    preferences.end();
+}
+  
+
+void saveAlarmDays2() {
+    preferences.begin("my-app", false);
+    preferences.putBytes("alarmDays2", alarmDays2, sizeof(alarmDays2));
+    preferences.end();
+}
 
 void VextON(void) {
   pinMode(18, OUTPUT);
