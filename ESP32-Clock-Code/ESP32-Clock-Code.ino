@@ -85,7 +85,7 @@ if (button_time - last_button_time > 200) {
 void setup() {
   Serial.begin(115200);
   pinMode(buzzer, OUTPUT);
-  pinMode(buttonPin, INPUT_PULLUP);
+  //pinMode(buttonPin, INPUT_PULLUP);
   attachInterrupt(buttonPin, isr, FALLING); // Button ISR interrupt
   pinMode(ledPin, OUTPUT);
   // Display setup
@@ -152,7 +152,7 @@ void setup() {
     delay(100);
     display.setFont( &FreeSans24pt7b );
     display.fastmodeOn();
-    printLocalTime();
+    printLocalTime(false);
     
   }
 
@@ -759,16 +759,22 @@ void loop() {
   checkAlarm();
   checkAlarm2();
   if (buttonPressed == true && ledActivated == 0) {
-    Serial.println("button pressed");
+    Serial.println("button pressed 1");
     digitalWrite(ledPin, HIGH);
     ledActivated = 1;
     last_led_time = millis();
+    Serial.println("a");
+    Serial.println(last_led_time);
+    buttonPressed = false;
   }
 
-  else if (buttonPressed == true && ledActivated == 1) {
+  led_time = millis();
+  Serial.println("b");
+    Serial.println(led_time);
+  if (buttonPressed == true && ledActivated == 1 && ipDisplay == false && led_time - last_led_time > 1000) {
     buttonPressed = false;
     ipDisplay = true;
-    Serial.println("button pressed");
+    Serial.println("button pressed 2");
     display.clear();
     display.fastmodeOff();
     display.setFont( &FreeSans9pt7b );
@@ -782,6 +788,13 @@ void loop() {
     display.update();
     buttonPressed = false;
   }
+  else if (buttonPressed == true && ipDisplay == true ) {
+  Serial.println("c");
+  String lastDisplayedTime = "";
+  printLocalTime(true);
+  buttonPressed = false;
+  ipDisplay = false;
+  }
 
   // check led timer
   led_time = millis();
@@ -791,10 +804,10 @@ void loop() {
   }
 
   delay(1000);
-  printLocalTime();
+  printLocalTime(false);
 }
 
-void printLocalTime() {
+void printLocalTime(bool ipDisplay) {
   struct tm timeinfo;
 
   if (!getLocalTime(&timeinfo)) {
@@ -814,6 +827,13 @@ void printLocalTime() {
   strftime(min, sizeof(min), "%M", &timeinfo); //Creating dateBuffer string from NTP timeinfo String
   strftime(hr, sizeof(hr), "%H", &timeinfo); //Creating dateBuffer string from NTP timeinfo String
 
+if (ipDisplay == true) {
+        Serial.println("d");
+        ipDisplay = false;
+        display.clear();
+        display.fastmodeOn();
+        lastDisplayedTime = "";
+      }
 
   if (timeBufferHr != lastDisplayedHr) { //The minute = 0 (New hour), then do full refresh of e-paper
       display.fastmodeOff();
@@ -825,11 +845,6 @@ void printLocalTime() {
       }
     }
     else if (timeBuffer != lastDisplayedTime) {
-      if (ipDisplay == true) {
-        ipDisplay = false;
-        display.clear();
-        display.fastmodeOn();
-      }
     Serial.println("Hour buffer");
     Serial.println(timeBufferHr);
     Serial.println("Time Buffer");
