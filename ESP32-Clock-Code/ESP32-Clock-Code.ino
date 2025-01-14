@@ -66,6 +66,8 @@ unsigned long button_time = 0;  // used for button debounce
 unsigned long last_button_time = 0; // used for button debounce
 bool buttonPressed = false;
 bool ipDisplay = false;
+unsigned long IpDisplayTime = 0;
+unsigned long lastIpDisplayTime = 0;
 
 //White LED
 const int ledPin = 45;
@@ -794,6 +796,7 @@ void loop() {
     display.println(" instead.");
     display.update();
     buttonPressed = false;
+    lastIpDisplayTime = millis();
   }
   else if (buttonPressed == true && ipDisplay == true ) {
   Serial.println("c");
@@ -810,13 +813,18 @@ void loop() {
     digitalWrite(ledPin, LOW);
   }
 
+  // check ip display timer
+  IpDisplayTime = millis();
+  if (IpDisplayTime - lastIpDisplayTime > 60000 && ipDisplay == true) {
+    ipDisplay = false;
+    display.clear();
+    display.fastmodeOn();
+    lastDisplayedTime = ""; // force time to display 
+    }
+
+
   delay(1000);
-  if (ipDisplay == true) {
-    printLocalTime(true);
-  }
-  else {
   printLocalTime(false);
-  }
 }
 
 void printLocalTime(bool ipDisplay) {
@@ -856,7 +864,7 @@ if (ipDisplay == true) {
       printTime(min, hr, dateBuffer);
       }
     }
-    else if (timeBuffer != lastDisplayedTime) {
+    else if (timeBuffer != lastDisplayedTime && ipDisplay == false) { //displays if the minute has changed or if the ip display page is not displayed. If the ip page is displayed the button has to be pressed to remove flag.
     Serial.println("Hour buffer");
     Serial.println(timeBufferHr);
     Serial.println("Time Buffer");
