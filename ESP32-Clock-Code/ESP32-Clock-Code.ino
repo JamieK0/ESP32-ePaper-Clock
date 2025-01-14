@@ -99,15 +99,22 @@ void setup() {
   VextON();
   delay(100);
   display.clear();
-  display.landscape();
+  display.setRotation( 3 ); //sets correct display orientation (pins above screen, landscape)
   display.setFont( &FreeSans9pt7b );
   //display.setFont(ArialMT_Plain_10);
-  display.setCursor(0, 0);
-  display.println("1. Connect to the E-Paper Clock ");
-  display.setCursor(0, 10);
-  display.println("  Wifi using the QR Code or");
-  display.setCursor(0, 20);
-  display.println("  choosing it in your device's wifi");
+  display.setCursor(0, 15);
+  display.println("Connect to the ");
+  display.setCursor(0, 35);
+  display.println("E-Paper Clock wifi");
+  display.setCursor(0, 55);
+  display.println("using the QR code");
+  display.setCursor(0, 75);
+  display.println("or choosing the");
+  display.setCursor(0, 95);
+  display.println("network in your");
+  display.setCursor(0, 115);
+  display.println("device's wifi settings.");
+  display.setCursor(0, 135);
   display.drawXBitmap(168, 0, Wifi_QR_bits, 128, 128, BLACK);
   display.update();
 
@@ -804,7 +811,12 @@ void loop() {
   }
 
   delay(1000);
+  if (ipDisplay == true) {
+    printLocalTime(true);
+  }
+  else {
   printLocalTime(false);
+  }
 }
 
 void printLocalTime(bool ipDisplay) {
