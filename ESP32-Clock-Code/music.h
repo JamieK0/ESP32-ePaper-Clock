@@ -59,3 +59,46 @@ int tetris_durations[] = {
   4, 4, 2,
   2
 };
+
+
+int tokyo_melody[] = {
+  NOTE_AS4, REST, NOTE_AS4, REST, NOTE_AS4, REST, NOTE_AS4, REST,
+  NOTE_AS4, NOTE_B4, NOTE_DS5,
+  NOTE_AS4, REST, NOTE_AS4, REST,
+  NOTE_AS4, NOTE_B4, NOTE_DS5,
+  NOTE_AS4, REST, NOTE_AS4, REST,
+  NOTE_AS4, NOTE_B4, NOTE_DS5,
+  NOTE_AS4, REST, NOTE_AS4, REST,
+  NOTE_AS4, NOTE_B4, NOTE_DS5,
+  NOTE_F5, REST, NOTE_F5, REST,
+  NOTE_GS5, NOTE_FS5, NOTE_F5,
+  NOTE_AS4, REST, NOTE_AS4, REST,
+  NOTE_GS5, NOTE_FS5, NOTE_F5,
+  NOTE_AS4, REST, NOTE_AS4, REST,
+  NOTE_AS4, NOTE_B4, NOTE_DS5,
+  NOTE_AS4, REST, NOTE_AS4, REST,
+  NOTE_AS4, NOTE_B4, NOTE_DS5,
+  NOTE_AS4, REST, NOTE_AS4, REST,
+  REST
+};
+
+int tokyo_durations[] = {
+  4, 4, 4, 4, 4, 4, 4, 4,
+  3, 3, 4,
+  4, 4, 4, 4,
+  3, 3, 4,
+  4, 4, 4, 4,
+  3, 3, 4,
+  4, 4, 4, 4,
+  3, 3, 4,
+  4, 4, 4, 4,
+  3, 3, 4,
+  4, 4, 4, 4,
+  3, 3, 4,
+  4, 4, 4, 4,
+  3, 3, 4,
+  4, 4, 4, 4,
+  3, 3, 4,
+  4, 4, 4, 4,
+  1
+};

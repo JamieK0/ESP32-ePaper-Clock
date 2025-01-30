@@ -7,6 +7,8 @@
 #include "pitches.h"
 #include "music.h"
 #include <Preferences.h>
+#include <ArduinoOTA.h>
+
 
 //Heltec E290
 #include <heltec-eink-modules.h>
@@ -65,6 +67,7 @@ int buttonState = 0;  // variable for reading the pushbutton status
 unsigned long button_time = 0;  // used for button debounce
 unsigned long last_button_time = 0; // used for button debounce
 bool buttonPressed = false;
+bool exitfor = false;
 bool ipDisplay = false;
 unsigned long IpDisplayTime = 0;
 unsigned long lastIpDisplayTime = 0;
@@ -157,6 +160,29 @@ void setup() {
     //display.display();
     configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
     String lastDisplayedTime = ""; //clears String so that printLocalTime displays current time
+    
+    // OTA update setup
+    ArduinoOTA.setHostname("ESP32-OTA");
+    ArduinoOTA.onStart([]() {
+        Serial.println("Start OTA Update");
+        ArduinoOTA.setPassword("admin");
+    });
+    ArduinoOTA.onEnd([]() {
+        Serial.println("OTA Update Complete");
+    });
+    ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+        Serial.printf("Progress: %u%%\n", (progress / (total / 100)));
+    });
+    ArduinoOTA.onError([](ota_error_t error) {
+        Serial.printf("Error[%u]: ", error);
+        if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
+        else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
+        else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
+        else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
+        else if (error == OTA_END_ERROR) Serial.println("End Failed");
+    });
+    ArduinoOTA.begin();
+    
     display.clear();
     delay(100);
     display.setFont( &FreeSans24pt7b );
@@ -164,6 +190,8 @@ void setup() {
     printLocalTime(false);
     
   }
+
+  
 
   // mDNS setup
   // Set up mDNS responder:
@@ -765,6 +793,7 @@ void loop() {
     Serial.println("Connected to Wi-Fi");
   }
   server.handleClient();
+  ArduinoOTA.handle();
   checkAlarm();
   checkAlarm2();
   if (buttonPressed == true && ledActivated == 0) {
@@ -951,17 +980,17 @@ void Alarm() {
   }*/
 
   // plays a song
-  int size = sizeof(tetris_durations) / sizeof(int);
-
+  int size = sizeof(tokyo_durations) / sizeof(int);
+  for (int i = 0; i < 50; i++) {
   for (int note = 0; note < size; note++) {
     //to calculate the note duration, take one second divided by the note type.
     //e.g. quarter note = 1000 / 4, eighth note = 1000/8, etc.
-    int duration = 1000 / tetris_durations[note];
-    tone(BUZZER_PIN, tetris_melody[note], duration);
+    int duration = 1000 / tokyo_durations[note];
+    tone(BUZZER_PIN, tokyo_melody[note], duration);
 
     //to distinguish the notes, set a minimum time between them.
     //the note's duration + 30% seems to work well:
-    int pauseBetweenNotes = duration * 1.30;
+    int pauseBetweenNotes = duration * 1.0;
     delay(pauseBetweenNotes);
     
     //stop the tone playing:
@@ -970,7 +999,18 @@ void Alarm() {
     ledActivated = 1;
     Serial.println(buttonState);
     //Serial.println(i);
-  if (buttonPressed == true) {
+    if (buttonPressed == true) {
+    exitfor = true;
+    buttonPressed = false;
+    alarmOn = false;
+    digitalWrite(ledPin, LOW);
+    ledActivated = 0;
+    noTone(buzzer);     // Stop sound...
+    break; // exit for loop
+    }
+  }
+  if (exitfor == true || buttonPressed == true) {
+    exitfor = false;
     buttonPressed = false;
     alarmOn = false;
     digitalWrite(ledPin, LOW);
