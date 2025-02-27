@@ -1063,6 +1063,7 @@ void printTime(const String& min, const String& hr, const String& db) { //tb = t
   printDate(db);
 }
 
+
 void printDate(const String& db) { // db = datebuffer
   Serial.println("Print Date");
   display.setFont( &FreeSans9pt7b );
